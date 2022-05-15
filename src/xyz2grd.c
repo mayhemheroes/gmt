@@ -302,15 +302,16 @@ GMT_LOCAL void xyz2grd_protect_J (struct GMTAPI_CTRL *API, struct GMT_OPTION *op
 }
 
 EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
-	bool previous_bin_i = false, previous_bin_o = false;
-	int error = 0, scol, srow;
-	unsigned int zcol, row, col, i, *flag = NULL, n_min = 1, was;
+	bool previous_bin_i = false, previous_bin_o = false, is_cube = false;
+	int error = 0, scol, srow, slayer;
+	unsigned int zcol, row, col, i, *flag = NULL, n_min = 1, was, n_layers, layer;
 	uint64_t n_empty = 0, n_confused = 0;
 	uint64_t ij, ij_gmt, n_read, n_filled = 0, n_used = 0, n_req;
+	size_t nm;
 
 	char c, Amode;
 
-	double *in = NULL, wesn[4];
+	double *in = NULL, wesn[6];
 
 	gmt_grdfloat no_data_f, *data = NULL;
 
@@ -318,6 +319,8 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 	int (*save_o) (struct GMT_CTRL *, FILE *, uint64_t, double *, char *);
 
 	struct GMT_GRID *Grid = NULL;
+	struct GMT_CUBE *Cube = NULL;
+	struct GMT_GRID_HEADER *h = NULL;
 	struct GMT_Z_IO io;
 	struct GMT_RECORD *In = NULL;
 	struct XYZ2GRD_CTRL *Ctrl = NULL;
@@ -344,7 +347,7 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 	/*---------------------------- This is the xyz2grd main code ----------------------------*/
 
 	n_req = (Ctrl->Z.active) ? 1 : ((Ctrl->A.mode == 'n') ? 2 : 3);	/* Required input columns */
-
+	is_cube = (GMT->common.R.dim == 3);
 	if (Ctrl->S.active) {	/* Just swap data and bail */
 		int out_ID;
 		unsigned w_mode = GMT_ADD_DEFAULT;
@@ -523,41 +526,60 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 		Return (GMT_NOERROR);
 	}
 
+	no_data_f = (GMT->common.d.active[GMT_IN]) ? (gmt_grdfloat)GMT->common.d.nan_proxy[GMT_IN] : GMT->session.f_NaN;
+	zcol = (is_cube) ? 3 : GMT_Z;
+	if (GMT->common.b.active[GMT_IN] && gmt_M_type (GMT, GMT_IN, zcol) & GMT_IS_RATIME && GMT->current.io.fmt[GMT_IN][zcol].type == GMT_FLOAT) {
+		GMT_Report (API, GMT_MSG_WARNING, "Your single precision binary input data are unlikely to hold absolute time coordinates without serious truncation.\n");
+		GMT_Report (API, GMT_MSG_WARNING, "You must use double precision when storing absolute time coordinates in binary data tables.\n");
+	}
+
+	if (is_cube) {
+		/* Here we will read either x,y,z,v or v data, using -R -I [-r] for sizeing */
+		/* Set up and allocate output cube [note: zero padding specified since no BCs required] */
+		n_req = 4;
+		wesn[ZLO] = GMT->common.R.wesn[ZLO];
+		wesn[ZHI] = GMT->common.R.wesn[ZHI];
+		if ((Cube = GMT_Create_Data (API, GMT_IS_CUBE, GMT_IS_VOLUME, GMT_CONTAINER_AND_DATA, NULL, wesn, NULL, \
+			GMT_GRID_DEFAULT_REG, 0, NULL)) == NULL) Return (API->error);
+		h = Cube->header;
+		n_layers = h->n_bands;
+	}
+	else {	
+		/* Set up and allocate output grid [note: zero padding specified since no BCs required] */
+		if ((Grid = GMT_Create_Data (API, GMT_IS_GRID, GMT_IS_SURFACE, GMT_CONTAINER_AND_DATA, NULL, NULL, NULL, \
+			GMT_GRID_DEFAULT_REG, 0, NULL)) == NULL) Return (API->error);
+		h = Grid->header;
+		n_layers = 1;
+	}
+	nm = h->nm * n_layers;
 	/* Here we will read either x,y,z or z data, using -R -I [-r] for sizeing */
 
-	no_data_f = (GMT->common.d.active[GMT_IN]) ? (gmt_grdfloat)GMT->common.d.nan_proxy[GMT_IN] : GMT->session.f_NaN;
-
-	/* Set up and allocate output grid [note: zero padding specified since no BCs required] */
-	if ((Grid = GMT_Create_Data (API, GMT_IS_GRID, GMT_IS_SURFACE, GMT_CONTAINER_AND_DATA, NULL, NULL, NULL, \
-		GMT_GRID_DEFAULT_REG, 0, NULL)) == NULL) Return (API->error);
 
 	/* See if we have a projection info to add */
 	if (GMT->common.J.active)		/* Convert the GMT -J<...> into a proj4 string and save it in the header */
-		Grid->header->ProjRefPROJ4 = gmt_export2proj4(GMT);
+		h->ProjRefPROJ4 = gmt_export2proj4(GMT);
 
 	Amode = Ctrl->A.active ? Ctrl->A.mode : 'm';
 
 	/* For Amode = 'd' or 'S' we need a second grid, and also require a minimum of 2 points per grid */
 	if (Amode == 'd' || Amode == 'S') {
-		data = gmt_M_memory_aligned (GMT, NULL, Grid->header->nm, gmt_grdfloat);
+		data = gmt_M_memory_aligned (GMT, NULL, nm, gmt_grdfloat);
 		n_min = 2;
 	}
 
-	if (GMT->common.b.active[GMT_IN] && gmt_M_type (GMT, GMT_IN, GMT_Z) & GMT_IS_RATIME && GMT->current.io.fmt[GMT_IN][GMT_Z].type == GMT_FLOAT) {
-		GMT_Report (API, GMT_MSG_WARNING, "Your single precision binary input data are unlikely to hold absolute time coordinates without serious truncation.\n");
-		GMT_Report (API, GMT_MSG_WARNING, "You must use double precision when storing absolute time coordinates in binary data tables.\n");
-	}
-
-	if (Ctrl->D.active && gmt_decode_grd_h_info (GMT, Ctrl->D.information, Grid->header)) {
+	if (Ctrl->D.active && gmt_decode_grd_h_info (GMT, Ctrl->D.information, h)) {
 		gmt_M_free (GMT, data);
 		Return (GMT_PARSE_ERROR);
 	}
 
-	GMT_Report (API, GMT_MSG_INFORMATION, "n_columns = %d  n_rows = %d  nm = %" PRIu64 "  size = %" PRIuS "\n", Grid->header->n_columns, Grid->header->n_rows, Grid->header->nm, Grid->header->size);
+	if (is_cube)
+		GMT_Report (API, GMT_MSG_INFORMATION, "n_layers = %d n_columns = %d  n_rows = %d  nm = %" PRIu64 "  size = %" PRIuS "\n", n_layers, h->n_columns, h->n_rows, nm, nm);
+	else {
+		GMT_Report (API, GMT_MSG_INFORMATION, "n_columns = %d  n_rows = %d  nm = %" PRIu64 "  size = %" PRIuS "\n", h->n_columns, h->n_rows, nm, h->size);
+		if (gmt_M_err_fail (GMT, gmt_set_z_io (GMT, &io, Grid), Ctrl->G.file)) Return (GMT_RUNTIME_ERROR);
+	}
 
-	if (gmt_M_err_fail (GMT, gmt_set_z_io (GMT, &io, Grid), Ctrl->G.file)) Return (GMT_RUNTIME_ERROR);
-
-	gmt_set_xy_domain (GMT, wesn, Grid->header);	/* May include some padding if gridline-registered */
+	gmt_set_xy_domain (GMT, wesn, h);	/* May include some padding if gridline-registered */
 	if (Ctrl->Z.active && GMT->common.d.active[GMT_IN]) {
 		was = GMT->common.d.first_col[GMT_IN];
 		if (gmt_M_is_fnan (no_data_f))	/* No point testing since nan_proxy is NaN... */
@@ -575,26 +597,21 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 		GMT->current.io.fmt[GMT_IN][zcol].type = gmt_get_io_type (GMT, Ctrl->Z.type);
 	}
 	else {
-		zcol = GMT_Z;
-		flag = gmt_M_memory (GMT, NULL, Grid->header->nm, unsigned int);	/* No padding needed for flag array */
+		zcol = (is_cube) ? 3 : GMT_Z;
+		flag = gmt_M_memory (GMT, NULL, nm, unsigned int);	/* No padding needed for flag array */
 		gmt_M_memset (Grid->header->pad, 4, unsigned int);	/* Algorithm below expects no padding; we repad at the end */
 		GMT->current.setting.io_nan_records = false;	/* Cannot have x,y as NaNs here */
 	}
 
 	if ((error = GMT_Set_Columns (API, GMT_IN, (unsigned int)n_req, GMT_COL_FIX_NO_TEXT)) != GMT_NOERROR) {
-		gmt_M_free (GMT, data);
-		gmt_M_free (GMT, flag);
-		Return (error);
+		goto hand_back_memory;
 	}
 	/* Initialize the i/o since we are doing record-by-record reading/writing */
 	if (GMT_Init_IO (API, GMT_IS_DATASET, GMT_IS_POINT, GMT_IN, GMT_ADD_DEFAULT, 0, options) != GMT_NOERROR) {
-		gmt_M_free (GMT, data);
-		gmt_M_free (GMT, flag);
-		Return (API->error);	/* Establishes data input */
+		error = API->error;	goto hand_back_memory;
 	}
 	if (GMT_Begin_IO (API, GMT_IS_DATASET, GMT_IN, GMT_HEADER_ON) != GMT_NOERROR) {
-		gmt_M_free (GMT, data);		gmt_M_free (GMT, flag);
-		Return (API->error);	/* Enables data input and sets access mode */
+		error = API->error;	goto hand_back_memory;
 	}
 
 	n_read = ij = 0;
@@ -608,8 +625,7 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 	do {	/* Keep returning records until we reach EOF */
 		if ((In = GMT_Get_Record (API, GMT_READ_DATA, NULL)) == NULL) {	/* Read next record, get NULL if special case */
 			if (gmt_M_rec_is_error (GMT)) {		/* Bail if there are any read errors */
-				gmt_M_free (GMT, data);		gmt_M_free (GMT, flag);
-				Return (GMT_RUNTIME_ERROR);
+				error = GMT_RUNTIME_ERROR;	goto hand_back_memory;
 			}
 			else if (gmt_M_rec_is_eof (GMT)) 		/* Reached end of file */
 				break;
@@ -629,8 +645,7 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 			if (ij == io.n_expected) {
 				GMT_Report (API, GMT_MSG_ERROR, "More than %" PRIu64 " records, only %" PRIu64 " was expected (aborting)!\n", ij, io.n_expected);
 				GMT_Report (API, GMT_MSG_ERROR, "(You are possibly mistaking xyz2grd for an interpolator; see 'greenspline|surface|triangulate' man pages)\n");
-				gmt_M_free (GMT, data);		gmt_M_free (GMT, flag);
-				Return (GMT_RUNTIME_ERROR);
+				error = GMT_RUNTIME_ERROR;	goto hand_back_memory;
 			}
 			ij_gmt = io.get_gmt_ij (&io, Grid, ij);	/* Convert input order to output node (with padding) as per -Z */
 			Grid->data[ij_gmt] = (gmt_input_col_is_nan_proxy (GMT, in[zcol], zcol)) ? GMT->session.f_NaN : (gmt_grdfloat)in[zcol];
@@ -639,7 +654,13 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 		else {	/* Get x, y, z */
 			if (gmt_M_y_is_outside (GMT, in[GMT_Y],  wesn[YLO], wesn[YHI])) continue;	/* Outside y-range */
 			if (gmt_x_is_outside (GMT, &in[GMT_X], wesn[XLO], wesn[XHI])) continue;	/* Outside x-range */
-
+			if (is_cube) {	/* Additional check on layer z (recycling y_is_outside check) */
+				if (gmt_M_y_is_outside (GMT, in[GMT_Z],  wesn[ZLO], wesn[ZHI])) continue;	/* Outside z-range */
+				slayer = gmt_M_z_to_layer (in[GMT_Z], Cube->z_range[0], Cube->z_inc, h->xy_off);
+				if (slayer == -1) slayer++, n_confused++;
+				layer = (unsigned int)slayer;
+				if (layer == n_layers) layer--, n_confused++;
+			}
 			/* Ok, we are inside the region - process data */
 
 			scol = (int)gmt_M_grd_x_to_col (GMT, in[GMT_X], Grid->header);
@@ -651,6 +672,8 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 			row = srow;
 			if (row == Grid->header->n_rows) row--, n_confused++;
 			ij = gmt_M_ij0 (Grid->header, row, col);	/* Because padding is turned off we can use ij for both Grid and flag */
+			if (is_cube && layer)	/* Offset to the current layer */
+				ij += layer * nm;
 			switch (Amode) {
 				case 'f':	/* Want the first value to matter only */
 					if (flag[ij] == 0) {	/* Assign first value and that is the end of it */
@@ -707,8 +730,7 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 	} while (true);
 
 	if (GMT_End_IO (API, GMT_IN, 0) != GMT_NOERROR) {	/* Disables further data input */
-		gmt_M_free (GMT, flag);		gmt_M_free (GMT, data);
-		Return (API->error);
+		error = API->error;	goto hand_back_memory;
 	}
 
 	if (Ctrl->Z.active) {
@@ -719,8 +741,7 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 		if (ij != io.n_expected) {	/* Input amount does not match expectations */
 			GMT_Report (API, GMT_MSG_ERROR, "Found %" PRIu64 " records, but %" PRIu64 " was expected (aborting)!\n", ij, io.n_expected);
 				GMT_Report (API, GMT_MSG_ERROR, "(You are probably misterpreting xyz2grd with an interpolator; see 'surface' man page)\n");
-			gmt_M_free (GMT, flag);		gmt_M_free (GMT, data);
-			Return (GMT_RUNTIME_ERROR);
+			error = GMT_RUNTIME_ERROR;	goto hand_back_memory;
 		}
 		gmt_check_z_io (GMT, &io, Grid);	/* This fills in missing periodic row or column */
 	}
@@ -732,51 +753,54 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 				ij_west = gmt_M_ij0 (Grid->header, row, 0);
 				ij_east = gmt_M_ij0 (Grid->header, row, Grid->header->n_columns - 1);
 
-				if (flag[ij_west] && !flag[ij_east]) {		/* Nothing in east bin, just copy from west */
-					Grid->data[ij_east] = Grid->data[ij_west];
-					flag[ij_east] = flag[ij_west];
-					if (n_min == 2) data[ij_east] = data[ij_west];
-				}
-				else if (flag[ij_east] && !flag[ij_west]) {	/* Nothing in west bin, just copy from east */
-					Grid->data[ij_west] = Grid->data[ij_east];
-					flag[ij_west] = flag[ij_east];
-					if (n_min == 2) data[ij_west] = data[ij_east];
-				}
-				else {	/* Both have some stuff, consolidate combined value into the west bin, then replicate to the east */
-					switch (Amode) {
-						case 'f':	/* Keep the first */
-							if (flag[ij_east] < flag[ij_west]) Grid->data[ij_west] = Grid->data[ij_east], flag[ij_west] = flag[ij_east];
-							break;
-						case 's':	/* Keep the last */
-							if (flag[ij_east] > flag[ij_west]) Grid->data[ij_west] = Grid->data[ij_east], flag[ij_west] = flag[ij_east];
-							break;
-						case 'l':	/* Keep the lowest */
-							if (Grid->data[ij_east] < Grid->data[ij_west]) Grid->data[ij_west] = Grid->data[ij_east];
-							flag[ij_west] += flag[ij_east];
-							break;
-						case 'd':	/* Keep the lowest in 'data' */
-							if (data[ij_east] < data[ij_west]) data[ij_west] = data[ij_east];
-							/* Intentionally fall through - since range also needs the highsets */
-						case 'u':	/* Keep the highest */
-							if (Grid->data[ij_east] > Grid->data[ij_west]) Grid->data[ij_west] = Grid->data[ij_east];
-							flag[ij_west] += flag[ij_east];
-							break;
-						case 'S':	/* Sum up the sums in 'data' */
-							data[ij_west] += data[ij_east];
-							/* Intentionally fall through */
-						default:	/* Add up in case we must sum, rms, mean, or standard deviation */
-							Grid->data[ij_west] += Grid->data[ij_east];
-							flag[ij_west] += flag[ij_east];
-							break;
+				for (layer = 0; layer < n_layers; layer++) {	/* Only looping for cubes though */
+					if (flag[ij_west] && !flag[ij_east]) {		/* Nothing in east bin, just copy from west */
+						Grid->data[ij_east] = Grid->data[ij_west];
+						flag[ij_east] = flag[ij_west];
+						if (n_min == 2) data[ij_east] = data[ij_west];
 					}
-					/* Replicate: */
-					Grid->data[ij_east] = Grid->data[ij_west];
-					flag[ij_east] = flag[ij_west];
+					else if (flag[ij_east] && !flag[ij_west]) {	/* Nothing in west bin, just copy from east */
+						Grid->data[ij_west] = Grid->data[ij_east];
+						flag[ij_west] = flag[ij_east];
+						if (n_min == 2) data[ij_west] = data[ij_east];
+					}
+					else {	/* Both have some stuff, consolidate combined value into the west bin, then replicate to the east */
+						switch (Amode) {
+							case 'f':	/* Keep the first */
+								if (flag[ij_east] < flag[ij_west]) Grid->data[ij_west] = Grid->data[ij_east], flag[ij_west] = flag[ij_east];
+								break;
+							case 's':	/* Keep the last */
+								if (flag[ij_east] > flag[ij_west]) Grid->data[ij_west] = Grid->data[ij_east], flag[ij_west] = flag[ij_east];
+								break;
+							case 'l':	/* Keep the lowest */
+								if (Grid->data[ij_east] < Grid->data[ij_west]) Grid->data[ij_west] = Grid->data[ij_east];
+								flag[ij_west] += flag[ij_east];
+								break;
+							case 'd':	/* Keep the lowest in 'data' */
+								if (data[ij_east] < data[ij_west]) data[ij_west] = data[ij_east];
+								/* Intentionally fall through - since range also needs the highsets */
+							case 'u':	/* Keep the highest */
+								if (Grid->data[ij_east] > Grid->data[ij_west]) Grid->data[ij_west] = Grid->data[ij_east];
+								flag[ij_west] += flag[ij_east];
+								break;
+							case 'S':	/* Sum up the sums in 'data' */
+								data[ij_west] += data[ij_east];
+								/* Intentionally fall through */
+							default:	/* Add up in case we must sum, rms, mean, or standard deviation */
+								Grid->data[ij_west] += Grid->data[ij_east];
+								flag[ij_west] += flag[ij_east];
+								break;
+						}
+						/* Replicate: */
+						Grid->data[ij_east] = Grid->data[ij_west];
+						flag[ij_east] = flag[ij_west];
+					}
+					ij_east += nm;	ij_west += nm;	/* Goto next layer but same (row, col) */
 				}
 			}
 		}
 
-		for (ij = 0; ij < Grid->header->nm; ij++) {	/* Check if all nodes got one value only */
+		for (ij = 0; ij < nm; ij++) {	/* Check if all nodes got one value only */
 			if (flag[ij] < n_min) {	/* Cells are not filled enough */
 				n_empty++;
 				Grid->data[ij] = no_data_f;
@@ -811,16 +835,28 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 		}
 	}
 
-	gmt_grd_pad_on (GMT, Grid, GMT->current.io.pad);	/* Restore padding */
-	if (GMT_Set_Comment (API, GMT_IS_GRID, GMT_COMMENT_IS_OPTION | GMT_COMMENT_IS_COMMAND, options, Grid)) {
-		gmt_M_free (GMT, flag);		gmt_M_free (GMT, data);
-		Return (API->error);
+	if (is_cube) {	/* Write the 3-D cube */
+		if (GMT_Set_Comment (API, GMT_IS_CUBE, GMT_COMMENT_IS_OPTION | GMT_COMMENT_IS_COMMAND, options, Cube)) {
+			error = API->error;	goto hand_back_memory;
+		}
+		if (GMT_Write_Data (API, GMT_IS_CUBE, GMT_IS_FILE, GMT_IS_VOLUME, GMT_CONTAINER_AND_DATA, NULL, Ctrl->G.file, Cube) != GMT_NOERROR) {
+			error = API->error;	goto hand_back_memory;
+		}
 	}
-	if (GMT_Write_Data (API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_CONTAINER_AND_DATA, NULL, Ctrl->G.file, Grid) != GMT_NOERROR) {
-		gmt_M_free (GMT, flag);		gmt_M_free (GMT, data);
-		Return (API->error);
+	else {	/* Write the 2-D grid */
+		gmt_grd_pad_on (GMT, Grid, GMT->current.io.pad);	/* Restore padding */
+		if (GMT_Set_Comment (API, GMT_IS_GRID, GMT_COMMENT_IS_OPTION | GMT_COMMENT_IS_COMMAND, options, Grid)) {
+			error = API->error;	goto hand_back_memory;
+		}
+		if (GMT_Write_Data (API, GMT_IS_GRID, GMT_IS_FILE, GMT_IS_SURFACE, GMT_CONTAINER_AND_DATA, NULL, Ctrl->G.file, Grid) != GMT_NOERROR) {
+			error = API->error;	goto hand_back_memory;
+		}
 	}
 
-	gmt_M_free (GMT, flag);		gmt_M_free (GMT, data);
-	Return (GMT_NOERROR);
+hand_back_memory:
+
+	gmt_M_free (GMT, flag);
+	gmt_M_free (GMT, data);
+
+	Return (error);
 }

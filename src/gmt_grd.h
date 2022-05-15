@@ -122,6 +122,10 @@ enum gmt_enum_wesnids {
 #define gmt_M_col_to_x(C,col,x0,x1,dx,off,n_columns) (((int)(col) == (int)((n_columns)-1)) ? (x1) - (off) * (dx) : (x0) + ((col) + (off)) * (dx))
 #define gmt_M_row_to_y(C,row,y0,y1,dy,off,n_rows) (((int)(row) == (int)((n_rows)-1)) ? (y0) + (off) * (dy) : (y1) - ((row) + (off)) * (dy))
 
+/* For cubes only */
+#define gmt_M_z_to_layer(z,z0,dz,off) (irint((((z) - (z0)) / (dz)) - (off)))
+#define gmt_M_layer_to_z(C,layer,z0,z1,dz,off,n_layers) (((int)(layer) == (int)((n_layers)-1)) ? (z1) - (off) * (dz) : (z0) + ((layer) + (off)) * (dz))
+
 /*! The follow macros simplify using the 4 above macros when all info is in the struct header h. */
 
 #define gmt_M_grd_col_to_x(C,col,h) gmt_M_col_to_x(C,col,h->wesn[XLO],h->wesn[XHI],h->inc[GMT_X],h->xy_off,h->n_columns)
