@@ -219,6 +219,10 @@ static int parse (struct GMT_CTRL *GMT, struct XYZ2GRD_CTRL *Ctrl, struct GMT_Z_
 			case 'I':
 				n_errors += gmt_M_repeated_module_option (API, Ctrl->I.active);
 				n_errors += gmt_parse_inc_option (GMT, 'I', opt->arg);
+				if (gmt_count_char (GMT, opt->arg, '/') == 2) {	/* Increments for a cube */
+					char *c = strrchr (opt->arg, '/');
+					GMT->common.R.inc[GMT_Z] = atof (&c[1]);
+				}
 				break;
 			case 'N':
 				if (gmt_M_compat_check (GMT, 4)) {	/* Honor old -N<value> option */
@@ -539,7 +543,7 @@ EXTERN_MSC int GMT_xyz2grd (void *V_API, int mode, void *args) {
 		n_req = 4;
 		wesn[ZLO] = GMT->common.R.wesn[ZLO];
 		wesn[ZHI] = GMT->common.R.wesn[ZHI];
-		if ((Cube = GMT_Create_Data (API, GMT_IS_CUBE, GMT_IS_VOLUME, GMT_CONTAINER_AND_DATA, NULL, wesn, NULL, \
+		if ((Cube = GMT_Create_Data (API, GMT_IS_CUBE, GMT_IS_VOLUME, GMT_CONTAINER_AND_DATA, NULL, wesn, GMT->common.R.inc, \
 			GMT_GRID_DEFAULT_REG, 0, NULL)) == NULL) Return (API->error);
 		h = Cube->header;
 		n_layers = h->n_bands;
