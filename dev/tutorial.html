@@ -2,10 +2,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tutorial &mdash; GMT 6.3.0 documentation</title>
+  <title>Tutorial in Bash &mdash; GMT 6.4.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/togglebutton.css" type="text/css" />
@@ -23,9 +23,12 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/togglebutton.js"></script>
         <script src="_static/clipboard.min.js"></script>
         <script src="_static/copybutton.js"></script>
+        <script>let toggleHintShow = 'Click to show example script';</script>
+        <script>let toggleHintHide = 'Click to hide';</script>
+        <script>let toggleOpenOnPrint = 'true';</script>
+        <script src="_static/togglebutton.js"></script>
         <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -48,7 +51,7 @@
             <a href="index.html" class="icon icon-home"> GMT
           </a>
               <div class="version">
-                6.3
+                6.4
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -61,9 +64,9 @@
     
               <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="gallery.html">Example Gallery</a></li>
-<li class="toctree-l1"><a class="reference internal" href="animations.html">Animations</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="gallery.html">Illustration Gallery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="animations.html">Animation Gallery</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial in Bash</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/intro.html">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/session-1.html">Session One</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorial/session-2.html">Session Two</a></li>
@@ -71,6 +74,8 @@
 <li class="toctree-l2"><a class="reference internal" href="tutorial/session-4.html">Session Four</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial_jl.html">Tutorial in Julia</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.pygmt.org/latest/tutorials/index.html">Tutorials in PyGMT</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference documentation</span></p>
 <ul>
@@ -137,7 +142,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Tutorial</li>
+      <li>Tutorial in Bash</li>
       <li class="wy-breadcrumbs-aside">
               <a href="https://github.com/GenericMappingTools/gmt/edit/master/doc/rst/source/tutorial.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
@@ -147,8 +152,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="tutorial">
-<h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+  <section id="tutorial-in-bash">
+<h1>Tutorial in Bash<a class="headerlink" href="#tutorial-in-bash" title="Permalink to this headline">¶</a></h1>
 <p><strong>Pål (Paul) Wessel</strong><sup>1</sup>,
 <strong>Walter H. F. Smith</strong><sup>2</sup>,
 <strong>Remko Scharroo</strong><sup>3</sup>,
@@ -162,7 +167,7 @@
 <li><p>Universidade do Algarve, Faro, Portugal</p></li>
 <li><p>University of Liverpool, UK</p></li>
 <li><p>Sea and Sun Technology, Germany</p></li>
-<li><p>Michigan State University</p></li>
+<li><p>China University of Geosciences, Wuhan, China</p></li>
 </ol>
 <p>The purpose of this tutorial is to introduce new users to GMT,
 outline the GMT environment, and enable you to make several
@@ -200,8 +205,8 @@ the <a class="reference external" href="https://docs.generic-mapping-tools.org/5
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021, The GMT Team..
-      <span class="lastupdated">Last updated on Nov 18, 2021.
+    <p>&#169; Copyright 2022, The GMT Team.
+      <span class="lastupdated">Last updated on May 27, 2022.
       </span></p>
   </div>
 

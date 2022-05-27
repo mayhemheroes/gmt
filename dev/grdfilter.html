@@ -2,10 +2,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>grdfilter &mdash; GMT 6.3.0 documentation</title>
+  <title>grdfilter &mdash; GMT 6.4.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/togglebutton.css" type="text/css" />
@@ -23,9 +23,12 @@
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
-        <script src="_static/togglebutton.js"></script>
         <script src="_static/clipboard.min.js"></script>
         <script src="_static/copybutton.js"></script>
+        <script>let toggleHintShow = 'Click to show example script';</script>
+        <script>let toggleHintHide = 'Click to hide';</script>
+        <script>let toggleOpenOnPrint = 'true';</script>
+        <script src="_static/togglebutton.js"></script>
         <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -48,7 +51,7 @@
             <a href="index.html" class="icon icon-home"> GMT
           </a>
               <div class="version">
-                6.3
+                6.4
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -61,9 +64,11 @@
     
               <p class="caption" role="heading"><span class="caption-text">Getting started</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="gallery.html">Example Gallery</a></li>
-<li class="toctree-l1"><a class="reference internal" href="animations.html">Animations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gallery.html">Illustration Gallery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="animations.html">Animation Gallery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial in Bash</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial_jl.html">Tutorial in Julia</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://www.pygmt.org/latest/tutorials/index.html">Tutorials in PyGMT</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference documentation</span></p>
 <ul>
@@ -165,8 +170,8 @@
 the selected convolution or non-convolution isotropic or rectangular
 filters and compute distances using Cartesian or Spherical geometries.
 The output grid can optionally be generated as a sub-region of the
-input (via <strong>-R</strong>) and/or with new increment (via <strong>-I</strong>) or
-registration (via <strong>-T</strong>). In this way, one may have “extra space” in
+input (via <a class="reference internal" href="#r"><span><strong>-R</strong></span></a></strong>) and/or with new increment (via <a class="reference internal" href="#i"><span><strong>-I</strong></span></a></strong>) or
+registration (via <a class="reference internal" href="#t"><span><strong>-T</strong></span></a></strong>). In this way, one may have “extra space” in
 the input data so that the edges will not be used and the output can be
 within one half-width of the input edges. If the filter is low-pass,
 then the output may be less frequently sampled than the input.  <strong>Note</strong>:
@@ -174,8 +179,7 @@ For filtering in the frequency (or wavenumber) domain instead, see doc:<cite>grd
 </section>
 <section id="required-arguments">
 <h2>Required Arguments<a class="headerlink" href="#required-arguments" title="Permalink to this headline">¶</a></h2>
-<p><em>ingrid</em>[=<em>ID</em>|?<em>varname</em>][<strong>+b</strong><em>band</em>][<strong>+d</strong><em>divisor</em>][<strong>+n</strong><em>invalid</em>]
-[<strong>+o</strong><em>offset</em>][<strong>+s</strong><em>scale</em>]</p>
+<p><em>ingrid</em>[=<em>ID</em>|?<em>varname</em>][<strong>+b</strong><em>band</em>][<strong>+d</strong><em>divisor</em>][<strong>+n</strong><em>invalid</em>][<strong>+o</strong><em>offset</em>][<strong>+s</strong><em>scale</em>]</p>
 <blockquote>
 <div><p>The grid file of points to be filtered. Optionally, append =<em>ID</em> for reading a specific file
 format [Default is =<em>nf</em>] or ?<em>varname</em> for a specific netCDF variable
@@ -262,15 +266,13 @@ to return the lowermost or uppermost of the modal values.</p></li>
 <li><p>(<strong>l</strong>) Lower: Return the minimum of all values.</p></li>
 <li><p>(<strong>L</strong>) Lower: Return minimum of all positive values only.</p></li>
 <li><p>(<strong>u</strong>) Upper: Return maximum of all values.</p></li>
-<li><p>(<strong>U</strong>) Upper: Return maximum or all negative values only.</p></li>
+<li><p>(<strong>U</strong>) Upper: Return maximum of all negative values only.</p></li>
 </ul>
 <p>In the case of <strong>L</strong>|<strong>U</strong> it is possible that no data passes
 the initial sign test; in that case the filter will return NaN.</p>
 </dd>
 </dl>
-<span class="target" id="g"></span><p><strong>-G</strong><em>outgrid</em>[=<em>ID</em>][<strong>+d</strong><em>divisor</em>][<strong>+n</strong><em>invalid</em>]
-[<strong>+o</strong><em>offset</em>|<strong>a</strong>][<strong>+s</strong><em>scale</em>|<strong>a</strong>]
-[:<em>driver</em>[<em>dataType</em>][<strong>+c</strong><em>options</em>]]</p>
+<span class="target" id="g"></span><p><strong>-G</strong><em>outgrid</em>[=<em>ID</em>][<strong>+d</strong><em>divisor</em>][<strong>+n</strong><em>invalid</em>][<strong>+o</strong><em>offset</em>|<strong>a</strong>][<strong>+s</strong><em>scale</em>|<strong>a</strong>][:<em>driver</em>[<em>dataType</em>][<strong>+c</strong><em>options</em>]]</p>
 <blockquote>
 <div><p>Give the name of the output filtered grid file. Optionally, append =<em>ID</em> for writing a specific file format
 (<a class="reference internal" href="gmt.html#grd-inout-full"><span class="std std-ref">See full description</span></a>). The following modifiers are
@@ -288,7 +290,7 @@ is 1].</p></li>
 </ul>
 </div></blockquote>
 <p>Note: Any offset is added before any scaling. <strong>+sa</strong> also sets <strong>+oa</strong>
-(unless overridden). To write specific formats via GDAL, use = <em>gd</em>
+(unless overridden). To write specific formats via GDAL, use =<em>gd</em>
 and supply <em>driver</em> (and optionally <em>dataType</em>) and/or one or more
 concatenated GDAL <strong>-co</strong> options using <strong>+c</strong>. See
 the <a class="reference internal" href="cookbook/features.html#write-grids-images"><span class="std std-ref">“Writing grids and images” cookbook section</span></a>
@@ -364,7 +366,7 @@ set the registration explicitly.</p>
 </dd>
 </dl>
 <dl class="simple">
-<dt><strong>-^</strong> or just <strong>-</strong></dt><dd><p>Print a short message about the syntax of the command, then exit (NOTE: on Windows just use <strong>-</strong>).</p>
+<dt><strong>-^</strong> or just <strong>-</strong></dt><dd><p>Print a short message about the syntax of the command, then exit (<strong>Note</strong>: on Windows just use <strong>-</strong>).</p>
 </dd>
 <dt><strong>-+</strong> or just <strong>+</strong></dt><dd><p>Print an extensive usage (help) message, including the explanation of
 any module-specific option (but not the GMT common options), then exit.</p>
@@ -433,9 +435,9 @@ gmt grdfilter ripples.nc -Ffgfilter.nc -D0 -Gsmooth.nc -V
 <h2>Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic simple">
 <li><p>To use the <strong>-D</strong>5 option the input Mercator grid must be created by
-img2mercgrd using the <strong>-C</strong> option so the origin of the y-values is the
+img2mercgrd using the <a class="reference internal" href="#c"><span><strong>-C</strong></span></a></strong> option so the origin of the y-values is the
 Equator (i.e., x = y = 0 correspond to lon = lat = 0).</p></li>
-<li><p>If the new <em>x_inc</em>, <em>y_inc</em> set with <strong>-I</strong> are NOT integer multiples
+<li><p>If the new <em>x_inc</em>, <em>y_inc</em> set with <a class="reference internal" href="#i"><span><strong>-I</strong></span></a></strong> are NOT integer multiples
 of the increments in the input data, filtering will be considerably slower.
 [Default increments: Same as input.]</p></li>
 </ol>
@@ -457,8 +459,8 @@ of the increments in the input data, filtering will be considerably slower.
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021, The GMT Team..
-      <span class="lastupdated">Last updated on Nov 18, 2021.
+    <p>&#169; Copyright 2022, The GMT Team.
+      <span class="lastupdated">Last updated on May 27, 2022.
       </span></p>
   </div>
 
