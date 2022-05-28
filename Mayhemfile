@@ -1,5 +1,5 @@
 project: rnshah9/gmt
-target: gmt
+target: kml2gmt
 
 cmds:
   - cmd: /repo/build/src/gmt kml2gmt @@
