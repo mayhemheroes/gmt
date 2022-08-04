@@ -21,8 +21,7 @@
  * Date:	1-JAN-2010
  * Version:	6 API
  *
- * Brief synopsis: Reads a grid file and writes a portion within it
- * to a new file.
+ * Brief synopsis: Reads a grid file and writes a portion within it to a new file.
  *
  * Note on KEYS: FD(= means -F takes an optional input Dataset as argument which may be followed by optional modifiers.
  */
@@ -73,7 +72,7 @@ struct GRDCUT_CTRL {
 	} S;
 	struct GRDCUT_Z {	/* -Z[min/max][+n|N|r] */
 		bool active;
-		unsigned int mode;	/* 0-2, see below */
+		unsigned int mode;	/* 0-2, see below for values */
 		double min, max;
 	} Z;
 };
@@ -267,6 +266,10 @@ static int parse (struct GMT_CTRL *GMT, struct GRDCUT_CTRL *Ctrl, struct GMT_OPT
 						n_errors += gmt_verify_expectations (GMT, gmt_M_type (GMT, GMT_IN, GMT_Z), gmt_scanf_arg (GMT, zb, gmt_M_type (GMT, GMT_IN, GMT_Z), false, &Ctrl->Z.max), zb);
 				}
 				if (c) c[0] = '+';	/* Restore modifier */
+				if (Ctrl->Z.min >= Ctrl->Z.max) {
+					GMT_Report (API, GMT_MSG_ERROR, "Option -Z: zmax not strictly greater than zmin\n");
+					n_errors++;
+				}
 				break;
 
 			default:	/* Report bad options */

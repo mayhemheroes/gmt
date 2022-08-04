@@ -47,8 +47,7 @@ You define an equidistant set of contour intervals or pass
 your own z-table or list, and create a new CPT based on an existing master (dynamic)
 CPT. The resulting CPT can be reversed relative to the master
 cpt, and can be made continuous or discrete.  For color tables beyond the
-standard GMT offerings, visit `cpt-city <http://soliton.vm.bytemark.co.uk/pub/cpt-city/>`_ and
-`Scientific Colour-Maps <http://www.fabiocrameri.ch/colourmaps.php>`_.
+current GMT offerings, visit `cpt-city <http://soliton.vm.bytemark.co.uk/pub/cpt-city/>`_.
 
 The CPT includes three additional colors beyond the range of
 z-values. These are the background color (B) assigned to values lower
@@ -333,7 +332,7 @@ we always get a color regardless of the *z* value, try
 To build a categorical table with 3 categories and add specific category
 names to them, try::
 
-    gmt makecpt -Ccubhelix -T0/3/1 -F+cClouds,Trees,Water > cat.cpt
+    gmt makecpt -Ccubhelix -T0/2/1 -F+cClouds,Trees,Water > cat.cpt
 
 To instead add unique category labels A, B, C, ... to a 10-item categorical CPT, try::
 

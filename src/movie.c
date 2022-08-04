@@ -1317,7 +1317,7 @@ EXTERN_MSC int GMT_movie (void *V_API, int mode, void *args) {
 
 	char init_file[PATH_MAX] = {""}, state_tag[GMT_LEN16] = {""}, state_prefix[GMT_LEN128] = {""}, param_file[PATH_MAX] = {""}, cwd[PATH_MAX] = {""};
 	char pre_file[PATH_MAX] = {""}, post_file[PATH_MAX] = {""}, main_file[PATH_MAX] = {""}, line[PATH_MAX] = {""}, version[GMT_LEN32] = {""};
-	char string[GMT_LEN128] = {""}, extra[GMT_BUFSIZ] = {""}, cmd[GMT_LEN256] = {""}, cleanup_file[PATH_MAX] = {""}, L_txt[GMT_LEN128] = {""};
+	char string[GMT_LEN128] = {""}, extra[GMT_BUFSIZ] = {""}, cmd[PATH_MAX] = {""}, cleanup_file[PATH_MAX] = {""}, L_txt[GMT_LEN128] = {""};
 	char png_file[PATH_MAX] = {""}, topdir[PATH_MAX] = {""}, workdir[PATH_MAX] = {""}, datadir[PATH_MAX] = {""}, frame_products[GMT_LEN32] = {""};
 	char intro_file[PATH_MAX] = {""}, conf_file[PATH_MAX], tmpwpath[PATH_MAX] = {""}, *script_file =  NULL, which[2] = {"LP"}, spacer, dir_sep;
 
@@ -2062,7 +2062,6 @@ EXTERN_MSC int GMT_movie (void *V_API, int mode, void *args) {
 		else
 			gmt_set_tvalue (fp, Ctrl->In.mode, false, "MOVIE_BACKGROUND", "");		/* Nothing */
 		if (Ctrl->F.transparent && Ctrl->F.active[MOVIE_GIF]) place_background = false;	/* Only place background once if transparent images */
-		gmt_set_tvalue (fp, Ctrl->In.mode, false, "MOVIE_ITEM", state_tag);		/* Current frame tag (formatted frame number) */
 		for (col = 0; col < n_values; col++) {	/* Derive frame variables from <timefile> in each parameter file */
 			sprintf (string, "MOVIE_COL%u", col);
 			gmt_set_value (GMT, fp, Ctrl->In.mode, col, string, D->table[0]->segment[0]->data[col][data_frame]);
