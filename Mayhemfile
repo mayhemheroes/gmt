@@ -1,0 +1,5 @@
+project: gmt
+target: kml2gmt
+
+cmds:
+  - cmd: /install/bin/gmt kml2gmt @@
