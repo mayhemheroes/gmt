@@ -59,7 +59,8 @@ jobs:
       fail-fast: false
       matrix:
         mayhemfile:
-          - mayhem/Mayhemfile
+          - mayhem/Mayhemfile_gmt_strrstr
+          - mayhem/Mayhemfile_kml2gmt
 
     steps:
       - uses: actions/checkout@v3

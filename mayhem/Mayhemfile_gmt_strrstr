@@ -1,0 +1,6 @@
+project: gmt
+target: kml2gmt
+
+cmds:
+  - cmd: /fuzz_gmt_strrstr
+    libfuzzer: true
