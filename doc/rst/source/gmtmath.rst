@@ -57,6 +57,8 @@ column are operated on, but this can be changed (see |-C|).
 Complicated or frequently occurring expressions may be coded as a macro
 for future use or stored and recalled via named memory locations.
 
+.. include:: RPN_info.rst_
+
 Required Arguments
 ------------------
 
@@ -697,6 +699,8 @@ Press, W. H., S. A. Teukolsky, W. T. Vetterling, and B. P. Flannery,
 
 Spanier, J., and K. B. Oldman, 1987, *An Atlas of Functions*, Hemisphere
 Publishing Corp.
+
+.. include:: RPN_MoreOn.rst_
 
 See Also
 --------

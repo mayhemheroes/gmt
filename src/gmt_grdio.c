@@ -1,6 +1,6 @@
 /*--------------------------------------------------------------------
  *
- * Copyright (c) 1991-2022 by the GMT Team (https://www.generic-mapping-tools.org/team.html)
+ * Copyright (c) 1991-2023 by the GMT Team (https://www.generic-mapping-tools.org/team.html)
  * See LICENSE.TXT file for copying and redistribution conditions.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -95,7 +95,9 @@ struct GRD_PAD {	/* Local structure */
 
 /*! gmt_M_grd_get_size computes grid size including the padding, and doubles it if complex values */
 GMT_LOCAL size_t gmtgrdio_grd_get_size (struct GMT_GRID_HEADER *h) {
-	return ((((h->complex_mode & GMT_GRID_IS_COMPLEX_MASK) > 0) + 1ULL) * h->mx * h->my);
+	size_t L = (((h->complex_mode & GMT_GRID_IS_COMPLEX_MASK) > 0) + 1ULL) * h->mx * h->my;
+	if (L % 2) L++;	/* Make it an even number just in case an array is passed to an operator that expects real,imag pairs */
+	return (L);
 }
 
 int gmt_grd_layout (struct GMT_CTRL *GMT, struct GMT_GRID_HEADER *header, gmt_grdfloat *grid, unsigned int complex_mode, unsigned int direction) {
